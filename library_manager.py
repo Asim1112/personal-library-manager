@@ -1,7 +1,21 @@
 from collections import Counter
+import json
+
+def load_books():
+    global library
+    try:
+        with open("library.json", "r") as file:
+            library = json.load(file)
+    except FileNotFoundError:
+        print("No existing library found. Starting fresh.")
+        library = []
+    except json.JSONDecodeError:
+        print("Error: library.json is corrupted. Starting with an empty library.")
+        library = []
 
 
 library = []
+load_books()
 
 book1 = {
     "title": "How to Win Friends and Influence People",
@@ -39,17 +53,46 @@ book5 = {
     "read": True
 }
 
-library.extend([book1, book2, book3, book4, book5])
+
+if not library: 
+    for book in [book1, book2, book3, book4, book5]:
+        
+        if not any(existing_book['title'].lower() == book['title'].lower() for existing_book in library):
+            library.append(book)
+
 
 
 def add_book():
-    title = input("Enter the book title:")
-    author = input("Enter the author:")
-    year = int(input("Enter the publication year:"))
-    genre = input("Enter the genre:")
+    while True:
+        title = input("Enter the book title: ").strip()
+        if title:
+            break
+        print("Title cannot be empty")
 
-    read_status = input("Have you read this book? (yes/no): ").strip().lower()
-    read = True if read_status == "yes" else False
+    while True:
+        author = input("Enter the author:").strip()
+        if author:
+            break
+        print("Author cannot be empty!")
+
+    while True:
+        try:
+            year = int(input("Enter the publication year: "))
+            if 1000 <= year <= 2025:
+                break
+            print("Please enter a valid year between 1000 and 2025.")
+        except ValueError:
+            print("Invalid input. Please enter a numeric value for the year.")
+    
+        
+    genre = input("Enter the genre:").strip()
+
+    while True:
+        read_status = input("Have you read this book? (yes/no): ").strip().lower()
+        if read_status in {"yes", "no"}:
+           read =  read_status == "yes"
+           break
+        print("Please enter 'yes' or 'no'.")
 
     new_book = {
         "title": title,
@@ -61,6 +104,7 @@ def add_book():
 
     library.append(new_book)
     print(f" '{title}' by {author} added successfully to library! \n")
+    save_books()
 
 
 
@@ -78,9 +122,10 @@ def remove_book():
    title = input("\n Enter the title of the book you want to delete: ")
 
    for book in library:
-        if book["title"].lower() == title.lower():
+        if book["title"].strip().lower() == title.strip().lower():
             library.remove(book)
             print(f"'{title}' has been removed from your library \n")
+            save_books()
             return
         
    print(f"Book titled '{title}' not found in your library \n")
@@ -156,7 +201,7 @@ def library_stats():
 
 
 def update_read_status():
-    title = input("Enter the book title you want to update: \n")
+    title = input("Enter the book title you want to update: \n").strip()
 
 
     for book in library:
@@ -164,32 +209,48 @@ def update_read_status():
             book['read'] = not book['read']
             status = "read" if book['read'] else 'not read'
             print(f"Updated: '{book['title']}' is now marked as {status}")
+            save_books()
             return
         
-    print(f"Book titled '{title}' not found")
+    print(f"Book titled '{title}' not found.")
 
 
 
-
+def save_books():
+    try:
+        with open("library.json", "w") as file:
+            json.dump(library, file)
+        print("Library saved successfully.")
+    except IOError:
+        print("Error: Unable to save the library file.")
 
 
 
 
 def display_menu():
-    print("\n 📖 Welcome to your personal Library Manager 📖")
-    print("1. Add a New Book")
-    print("2. Delete a Book")
-    print("3. Find a Book")
-    print("4. Show All Books")
-    print("5. Library Stats")
-    print("6. Update Read Status")
-    print("7. Quit")
+    while True:  
+        print(""" 
+            Welcome to your personal Library Manager
+            1. Add a New Book
+            2. Delete a Book
+            3. Find a Book
+            4. Show all Books
+            5. Library Stats
+            6. Update Read Status
+            7. Quit
+        """)
+
+        choice = input("Enter your choice: ").strip()
+
+        if choice.isdigit() and choice in {"1", "2", "3", "4", "5", "6", "7"}:
+            return choice   # return valid choice
+        
+        print("Invalid Choice! Please enter a number between 1 and 7.")
 
 
 while True:
-    display_menu()
+    choice = display_menu()
 
-    choice = input("Enter your choice: ").strip()
 
     if choice == "1":
         add_book()
@@ -210,7 +271,7 @@ while True:
         update_read_status()
         
     elif choice == "7":
-        
+        save_books()
         print("Exiting the Program, Good Bye!")
         break
     else:
